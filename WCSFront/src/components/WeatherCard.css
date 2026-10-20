@@ -1,0 +1,84 @@
+.weather-card {
+  width: 100%;
+  padding: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 1.4rem;
+  color: #102b43;
+  background: linear-gradient(145deg, #fff 0%, #eff7fc 100%);
+  box-shadow: 0 1rem 2.5rem rgb(21 57 83 / 9%);
+}
+
+.weather-card__header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.weather-card__temperature {
+  margin: 0;
+  font-size: clamp(3.75rem, 18vw, 5.5rem);
+  font-weight: 750;
+  letter-spacing: -0.075em;
+  line-height: 0.95;
+}
+
+.weather-card__unit {
+  display: inline-block;
+  margin-left: 0.3rem;
+  font-size: 0.48em;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  vertical-align: top;
+}
+
+.weather-card__condition {
+  margin: 0;
+  font-size: clamp(1.25rem, 5vw, 1.65rem);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.weather-card__observed {
+  margin: 1rem 0 0;
+  color: #50677a;
+  font-size: 0.875rem;
+}
+
+.weather-card__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid #d9e6ee;
+}
+
+.weather-card__detail {
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 75%);
+}
+
+.weather-card__detail dt {
+  color: #50677a;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.weather-card__detail dd {
+  margin: 0.3rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+@media (min-width: 40rem) {
+  .weather-card {
+    padding: 1.75rem;
+  }
+
+  .weather-card__details {
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  }
+}

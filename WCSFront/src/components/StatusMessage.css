@@ -1,0 +1,87 @@
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  color: #18324b;
+  background: #edf5fb;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.status-message__text {
+  flex: 1;
+  margin: 0;
+}
+
+.status-message--error {
+  color: #762c23;
+  border-color: #efc1b9;
+  background: #fff2ef;
+}
+
+.status-message--notice {
+  color: #4a3a16;
+  border-color: #ead9a8;
+  background: #fff9e8;
+}
+
+.status-message--empty {
+  color: #455b70;
+  border-color: #d8e3eb;
+  background: #f5f8fa;
+}
+
+.status-message__spinner {
+  flex: 0 0 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: status-message-spin 0.8s linear infinite;
+}
+
+.status-message__retry {
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 0.7rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.status-message__retry:focus-visible {
+  outline: 3px solid #1d6fa5;
+  outline-offset: 3px;
+}
+
+@keyframes status-message-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-message__spinner {
+    animation-duration: 1.8s;
+  }
+}
+
+@media (max-width: 24rem) {
+  .status-message {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .status-message__retry {
+    margin-left: 1.85rem;
+  }
+}

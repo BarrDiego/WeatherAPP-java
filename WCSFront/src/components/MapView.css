@@ -1,0 +1,132 @@
+.map-view {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.map-view__heading {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.map-view__heading h2 {
+  margin: 0;
+  color: #102b43;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.map-view__heading p {
+  margin: 0.35rem 0 0;
+  color: #50677a;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.map-view__location-button,
+.map-view__confirm-button {
+  min-height: 2.9rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid #087eaa;
+  border-radius: 0.8rem;
+  color: #075a7a;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.map-view__location-button:disabled,
+.map-view__confirm-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.map-view__confirm-button {
+  width: 100%;
+  border-color: #087eaa;
+  color: #fff;
+  background: #087eaa;
+}
+
+.map-view__location-button:focus-visible,
+.map-view__confirm-button:focus-visible,
+.map-view__coordinates input:focus-visible {
+  outline: 3px solid #f0b429;
+  outline-offset: 3px;
+}
+
+.map-view__canvas {
+  height: clamp(17rem, 55vh, 31rem);
+  height: clamp(17rem, 55dvh, 31rem);
+  min-height: 17rem;
+  overflow: hidden;
+  border: 1px solid #cbd9e2;
+  border-radius: 1rem;
+  background: #eaf2f6;
+  isolation: isolate;
+}
+
+.map-view__canvas .leaflet-container {
+  width: 100%;
+  height: 100%;
+  font: inherit;
+}
+
+.map-view__coordinates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.map-view__coordinates label {
+  display: grid;
+  gap: 0.4rem;
+  color: #40596d;
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.map-view__coordinates input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.9rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #bdccd7;
+  border-radius: 0.7rem;
+  color: #102b43;
+  background: #fff;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.map-view__marker-icon-wrapper {
+  border: 0;
+  background: transparent;
+}
+
+.map-view__marker-icon {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  display: block;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #087eaa;
+  box-shadow: 0 2px 8px rgb(16 43 67 / 35%);
+}
+
+@media (min-width: 42rem) {
+  .map-view__heading {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .map-view__confirm-button {
+    width: auto;
+    justify-self: start;
+    min-width: 13rem;
+  }
+}
