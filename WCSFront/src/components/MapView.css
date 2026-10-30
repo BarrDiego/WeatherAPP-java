@@ -24,6 +24,76 @@
   line-height: 1.45;
 }
 
+.map-view__address-search {
+  display: grid;
+  gap: 0.45rem;
+  color: #40596d;
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.map-view__address-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+}
+
+.map-view__address-controls input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.9rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #bdccd7;
+  border-radius: 0.7rem;
+  color: #102b43;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+}
+
+.map-view__address-controls input:focus-visible {
+  outline: 3px solid #f0b429;
+  outline-offset: 3px;
+}
+
+.map-view__address-results {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-view__address-results button {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d5e2ea;
+  border-radius: 0.7rem;
+  color: #183b52;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-view__address-results button:hover {
+  border-color: #087eaa;
+  background: #f3faff;
+}
+
+.map-view__geocoding-attribution {
+  margin: -0.5rem 0 0;
+  color: #607789;
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.map-view__geocoding-attribution a {
+  color: #075a7a;
+}
+
 .map-view__location-button,
 .map-view__confirm-button {
   min-height: 2.9rem;

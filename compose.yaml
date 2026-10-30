@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: ./WCSApp
+      dockerfile: Dockerfile
+    environment:
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-demo-key}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./WCSFront
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    depends_on:
+      - backend
+    ports:
+      - "4173:80"

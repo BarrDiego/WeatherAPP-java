@@ -14,7 +14,7 @@ Definir una interfaz React para consultar las condiciones meteorológicas actual
 - Se usará **Vite** como herramienta de desarrollo y build para la SPA React.
 - Se usará **npm** como gestor de paquetes y se versionará `package-lock.json`; Yarn es una alternativa de gestor de paquetes, no un reemplazo de Vite, y no hace falta añadirlo sin una necesidad concreta.
 - `WCSFront` será el proyecto/carpeta de trabajo del frontend y el lugar previsto para alojarlo.
-- El mapa interactivo será el mecanismo principal para elegir una ubicación. También se acordaron la búsqueda por nombre de lugar y la opción de usar la ubicación actual del dispositivo.
+- El mapa interactivo será el mecanismo principal para elegir una ubicación. También se acordaron la búsqueda por dirección o lugar y la opción de usar la ubicación actual del dispositivo.
 - La primera versión mostrará **condiciones actuales**. OpenWeather seguirá como proveedor principal y Open-Meteo como fallback en el backend.
 - El pronóstico horario, la probabilidad de lluvia y otras capacidades adicionales se desarrollarán en una etapa posterior.
 - El mapa inicial sirve para seleccionar una ubicación; no incluye capas meteorológicas, radar ni visualizaciones de pronóstico.
@@ -26,7 +26,7 @@ Definir una interfaz React para consultar las condiciones meteorológicas actual
 ### Incluye
 
 - Elegir una ubicación haciendo clic en el mapa y mostrando/moviendo un marcador.
-- Buscar una ciudad o lugar y centrar el mapa en el resultado, una vez elegido el servicio de geocodificación.
+- Buscar una dirección o lugar con Nominatim y centrar el mapa en el resultado. La consulta se envía al presentar el formulario; no se usa autocompletado.
 - Solicitar permiso del navegador para centrar el mapa en la ubicación actual; si no se concede o falla, las demás formas de selección deben seguir disponibles.
 - Consultar y mostrar las condiciones actuales devueltas por el backend.
 - Mostrar estados de carga, validación, ausencia de resultados y errores de consulta de forma comprensible.
@@ -121,6 +121,7 @@ La implementación debe configurar la URL base del backend por entorno, no codif
 - La pantalla presenta las condiciones actuales disponibles con sus unidades normalizadas, sin inventar campos ausentes.
 - Los estados de carga, falta de resultados, permiso denegado, error de red y error del backend son comprensibles y recuperables.
 - La búsqueda y la ubicación del dispositivo no impiden elegir manualmente un punto en el mapa.
+- La búsqueda de direcciones ofrece resultados seleccionables, limita las consultas a una por segundo y comunica su atribución y uso de datos.
 - El frontend funciona en móvil y escritorio y no expone secretos de los proveedores.
 - La interfaz se implementa mobile-first y se adapta progresivamente a escritorio sin perder funciones ni legibilidad.
 - El mapa no presenta capas meteorológicas ni pronóstico como si fueran parte de esta entrega.
@@ -128,14 +129,13 @@ La implementación debe configurar la URL base del backend por entorno, no codif
 
 ## 10. Decisiones pendientes para cerrar el diseño y la implementación
 
-1. Elegir el proveedor de teselas/cartografía y verificar sus condiciones de uso y atribución. React-Leaflet y OpenStreetMap son candidatos, no decisiones técnicas finales.
-2. Elegir un servicio de geocodificación para la búsqueda, comprobando cobertura en Argentina, cuotas, privacidad, licencia y atribución.
-3. Definir el centro y zoom iniciales del mapa.
-4. Decidir si cada selección consulta automáticamente o si la persona usuaria confirma con un botón. Se recomienda confirmación explícita para evitar llamadas innecesarias mientras explora el mapa.
-5. Precisar la dirección visual meteorológica (paleta, tipografía, iconos, composición y marca) a partir del diseño que se elaborará en conjunto.
-6. Definir la estrategia de despliegue y URL/orígenes permitidos para la integración con el backend.
-7. Acordar cómo se atribuirá la fuente de datos meteorológicos cuando el backend use el proveedor secundario; puede requerir que el backend identifique el proveedor utilizado o mostrar atribuciones apropiadas para ambos.
+1. Antes de publicar, revisar que la aplicación cumpla la política vigente de Nominatim: identificación por Referer/User-Agent, máximo una solicitud por segundo por aplicación, atribución, caché y posibilidad de cambiar de proveedor sin actualizar el frontend. La implementación actual limita las solicitudes a una por 1,1 segundos y mantiene una caché en memoria; todavía no permite seleccionar un proveedor distinto en tiempo de ejecución.
+2. Verificar límites y atribución de las teselas de OpenStreetMap para el despliegue elegido.
+3. Definir la estrategia de despliegue y URL/orígenes permitidos para la integración con el backend.
+4. Acordar cómo se atribuirá la fuente de datos meteorológicos cuando el backend use el proveedor secundario; puede requerir que el backend identifique el proveedor utilizado o mostrar atribuciones apropiadas para ambos.
 
 ## 11. Nota de arquitectura
 
 La biblioteca de mapas, el proveedor de teselas y el servicio de geocodificación son decisiones separadas. Un mapa base no implica incorporar mapas meteorológicos. Si se adopta OpenStreetMap, debe seleccionarse un servicio de teselas apropiado y cumplir su política de uso y atribución; los datos de Open-Meteo también requieren atribución bajo sus condiciones de licencia.
+
+La búsqueda implementada consulta directamente `https://nominatim.openstreetmap.org/search` al enviar el formulario. No se envían consultas mientras se escribe. Los resultados se cachean en memoria durante la sesión, se respeta un intervalo mínimo de 1,1 segundos entre solicitudes y se informa que el texto de búsqueda se envía a OpenStreetMap. Antes de publicar la app se debe verificar nuevamente la [política de uso de Nominatim](https://operations.osmfoundation.org/policies/nominatim/), especialmente la identificación de la aplicación y la posibilidad de cambiar de servicio.

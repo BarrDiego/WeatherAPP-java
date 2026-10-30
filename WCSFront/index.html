@@ -1,36 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    
-    <title>Page Title</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-   
-    
-</head>
-<body>
-
-    <form action="my_search" method="post">
-        <label>Ciudad/City <input type="text" id="city"> </label><br>
-        <label>Provincia/State <input type="text" id="state"> </label><br>
-        <label> Pais/Country <input type="text" id="country"> </label>
-        <br><hr><br>
-        <button id="btnBuscar" type="button">Buscar</button>
-        <br>
-        <hr>
-        <br>
-	</form>
-        <div id="showResult">
-            
-        </div>
-
-
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.11.0/underscore.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.0.1/mustache.js"></script>
-    <script src="./index.js"></script>
-</body>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Consultá las condiciones meteorológicas actuales para una ubicación."
+    />
+    <meta name="theme-color" content="#eaf3f8" />
+    <title>Weather Conginitive Service App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

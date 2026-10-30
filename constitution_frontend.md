@@ -119,7 +119,7 @@ Los mensajes son claros, accionables y no exponen cuerpos crudos de respuesta, s
 
 El mapa permite elegir una ubicación y confirmar una consulta; no representa radar, capas meteorológicas ni pronósticos.
 
-La búsqueda por nombre de lugar y su servicio de geocodificación requieren una decisión explícita sobre proveedor, cobertura, cuotas, privacidad, licencia y atribución antes de incorporarse. La selección por mapa y la geolocalización deben seguir disponibles aunque la búsqueda no esté implementada o falle.
+La búsqueda de direcciones usa Nominatim público de OpenStreetMap durante el desarrollo local, con consultas explícitas al enviar el formulario y sin autocompletado. La selección por mapa y la geolocalización siguen disponibles aunque el servicio de búsqueda no esté disponible.
 
 ## 6. Regla de evolución
 
@@ -127,7 +127,9 @@ Toda modificación de arquitectura o contrato debe mantener estas garantías: in
 
 ## 7. TODO / Roadmap — próxima sesión
 
-- [ ] Implementar e integrar `src/App.tsx`, ensamblando `MapView`, `WeatherCard`, `StatusMessage` y los custom hooks en un layout responsivo mobile-first.
-- [ ] Ejecutar `npm install` localmente para instalar las dependencias y generar `package-lock.json`.
-- [ ] Validar la compilación de TypeScript con `npm run build` y levantar el servidor de desarrollo con `npm run dev`.
-- [ ] Realizar una prueba de integración End-to-End entre `WCSFront` y el backend Spring Boot donde se ejecuta `wcsAgent`.
+- [x] Implementar e integrar `src/App.tsx`, ensamblando `MapView`, `WeatherCard`, `StatusMessage` y los custom hooks en un layout responsivo mobile-first.
+- [x] Instalar las dependencias y generar `WCSFront/package-lock.json`.
+- [x] Validar la compilación de TypeScript y el bundle de producción con `npm run build`; comprobar el preview local.
+- [x] Integrar búsqueda manual por dirección con Nominatim, sin autocompletado, con límite de consultas, caché de sesión y atribución.
+- [ ] Completar una consulta meteorológica exitosa de extremo a extremo con credenciales válidas y desplegar ambos proyectos en los servicios de hosting elegidos.
+- [ ] Antes de publicar, validar la política de Nominatim y resolver la selección de proveedor en tiempo de ejecución.
