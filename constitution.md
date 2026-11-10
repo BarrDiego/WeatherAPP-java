@@ -113,3 +113,11 @@ La etapa puede considerarse apropiadamente validada cuando:
 ## 11. Regla de evolución
 
 Esta constitución puede actualizarse si la arquitectura del proyecto cambia, pero siempre deberá mantener la misma intención: pruebas confiables, aisladas, reproducibles y enfocadas en el comportamiento de la aplicación.
+
+## 12. Registro de sesión — 2026-11-10
+
+- Se completaron las llamadas HTTP reales: OpenWeather Current Weather como proveedor principal y Open-Meteo Forecast API como fallback, decodificado con el SDK Java oficial en formato FlatBuffers.
+- Se incorporaron Circuit Breakers independientes con Resilience4j. Solo fallos recuperables se cuentan; fallos no recuperables, como credenciales rechazadas, no disparan fallback ni abren el circuito.
+- Se agregaron pruebas deterministas para solicitudes/mapeos de proveedores, fallback, apertura de circuitos, errores no recuperables y recuperación HALF_OPEN. La suite pasó con 9 tests.
+- Se verificó manualmente el endpoint local contra ambos proveedores reales: OpenWeather con `OPENWEATHER_API_KEY` y Open-Meteo sin clave. Las pruebas unitarias siguen sin invocar proveedores reales ni usar secretos.
+- Próxima sesión: comenzar el diseño e integración de la etapa 3 (capa agéntica), reutilizando el contrato y el caso de uso meteorológico existentes. No permitir que el agente eluda la política de proveedores del backend.

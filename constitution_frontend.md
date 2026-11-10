@@ -121,6 +121,8 @@ El mapa permite elegir una ubicación y confirmar una consulta; no representa ra
 
 La búsqueda de direcciones usa Nominatim público de OpenStreetMap durante el desarrollo local, con consultas explícitas al enviar el formulario y sin autocompletado. La selección por mapa y la geolocalización siguen disponibles aunque el servicio de búsqueda no esté disponible.
 
+La aplicación no pide a la persona usuaria ingresar coordenadas manualmente. El botón para confirmar la consulta meteorológica vive en el panel “Tu consulta”, no debajo del mapa. Las búsquedas argentinas pueden probar una variante con el número de puerta al inicio si la consulta original no devuelve resultados; cada solicitud a Nominatim sigue respetando el intervalo mínimo configurado.
+
 ## 6. Regla de evolución
 
 Toda modificación de arquitectura o contrato debe mantener estas garantías: integración con el backend mediante el Adapter, ausencia de secretos en el cliente, fidelidad a los datos recibidos, control de respuestas obsoletas, accesibilidad y funcionamiento mobile-first. Las decisiones nuevas que alteren estas reglas deben documentarse y reflejarse también en `frontend-spec.md` cuando afecten el alcance funcional.
@@ -131,5 +133,16 @@ Toda modificación de arquitectura o contrato debe mantener estas garantías: in
 - [x] Instalar las dependencias y generar `WCSFront/package-lock.json`.
 - [x] Validar la compilación de TypeScript y el bundle de producción con `npm run build`; comprobar el preview local.
 - [x] Integrar búsqueda manual por dirección con Nominatim, sin autocompletado, con límite de consultas, caché de sesión y atribución.
-- [ ] Completar una consulta meteorológica exitosa de extremo a extremo con credenciales válidas y desplegar ambos proyectos en los servicios de hosting elegidos.
+- [x] Verificar localmente una consulta meteorológica de extremo a extremo con datos reales de OpenWeather y Open-Meteo.
+- [x] Mover la acción “Consultar clima” a la tarjeta lateral “Tu consulta” y quitar los campos editables de latitud/longitud.
+- [x] Mejorar la búsqueda de direcciones: restringir resultados a Argentina y, ante cero coincidencias, reintentar con el número de puerta primero cuando se identifique.
+- [ ] Desplegar ambos proyectos en los servicios de hosting elegidos.
 - [ ] Antes de publicar, validar la política de Nominatim y resolver la selección de proveedor en tiempo de ejecución.
+
+## 8. Registro de sesión — 2026-11-10
+
+- Se revisaron las capturas y se ajustó el flujo mobile-first: la consulta se confirma desde el panel lateral, mientras que mapa y formulario quedan enfocados en seleccionar la ubicación.
+- Se eliminaron los inputs manuales de coordenadas; siguen mostrándose las coordenadas de la selección como dato de referencia.
+- Para direcciones argentinas, la búsqueda añade restricción de país y, si no hay resultados, prueba una variante con el número de puerta al inicio. Cada solicitud sigue respetando la espera mínima de 1,1 segundos y no se agregó autocompletado.
+- `npm run build` pasó. Se confirmó manualmente la integración de frontend/backend durante la sesión.
+- Próxima sesión: comenzar la etapa 3, diseñando e integrando la capa agéntica sobre el endpoint y caso de uso actuales; mantener los proveedores y el fallback bajo control del backend.

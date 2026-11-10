@@ -95,7 +95,7 @@
 }
 
 .map-view__location-button,
-.map-view__confirm-button {
+.weather-panel__confirm-button {
   min-height: 2.9rem;
   padding: 0.7rem 1rem;
   border: 1px solid #087eaa;
@@ -108,21 +108,22 @@
 }
 
 .map-view__location-button:disabled,
-.map-view__confirm-button:disabled {
+.weather-panel__confirm-button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }
 
-.map-view__confirm-button {
+.weather-panel__confirm-button {
   width: 100%;
+  min-height: 3rem;
   border-color: #087eaa;
   color: #fff;
   background: #087eaa;
+  font-size: 1rem;
 }
 
 .map-view__location-button:focus-visible,
-.map-view__confirm-button:focus-visible,
-.map-view__coordinates input:focus-visible {
+.weather-panel__confirm-button:focus-visible {
   outline: 3px solid #f0b429;
   outline-offset: 3px;
 }
@@ -142,34 +143,6 @@
   width: 100%;
   height: 100%;
   font: inherit;
-}
-
-.map-view__coordinates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.map-view__coordinates label {
-  display: grid;
-  gap: 0.4rem;
-  color: #40596d;
-  font-size: 0.83rem;
-  font-weight: 650;
-}
-
-.map-view__coordinates input {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  min-height: 2.9rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #bdccd7;
-  border-radius: 0.7rem;
-  color: #102b43;
-  background: #fff;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
 }
 
 .map-view__marker-icon-wrapper {
@@ -194,9 +167,4 @@
     align-items: center;
   }
 
-  .map-view__confirm-button {
-    width: auto;
-    justify-self: start;
-    min-width: 13rem;
-  }
 }

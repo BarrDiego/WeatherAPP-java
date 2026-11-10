@@ -69,9 +69,7 @@ export function App() {
 
       <div className="app-layout">
         <MapView
-          onConfirm={handleConfirm}
           onSelectionChange={handleSelectionChange}
-          isLoading={weatherState.status === "loading"}
         />
 
         <section className="weather-panel" aria-labelledby="weather-panel-title">
@@ -114,10 +112,21 @@ export function App() {
               message={
                 selection
                   ? "Confirmá la ubicación para consultar el clima."
-                  : "Elegí un punto en el mapa o usá las coordenadas para comenzar."
+                  : "Buscá una dirección, elegí un punto en el mapa o usá tu ubicación."
               }
             />
           )}
+
+          <button
+            className="weather-panel__confirm-button"
+            type="button"
+            onClick={() => {
+              if (selection) handleConfirm(selection);
+            }}
+            disabled={!selection || weatherState.status === "loading"}
+          >
+            {weatherState.status === "loading" ? "Consultando clima…" : "Consultar clima"}
+          </button>
 
           <p className="weather-panel__note">
             Datos actuales provistos por el servicio meteorológico. Las coordenadas se

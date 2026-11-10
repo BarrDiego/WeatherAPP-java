@@ -21,10 +21,8 @@ import "./MapView.css";
 import "leaflet/dist/leaflet.css";
 
 interface MapViewProps {
-  onConfirm: (coordinates: Coordinates) => void;
   onSelectionChange: (coordinates: Coordinates | null) => void;
   initialCoordinates?: Coordinates | null;
-  isLoading?: boolean;
 }
 
 type AddressSearchState =
@@ -42,17 +40,6 @@ const selectedLocationIcon = divIcon({
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
-
-function isValidCoordinates(latitude: number, longitude: number): boolean {
-  return (
-    Number.isFinite(latitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    Number.isFinite(longitude) &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
-}
 
 function MapSelectionEvents({ onSelect }: { onSelect: (coordinates: Coordinates) => void }) {
   const handleMapClick = useCallback(
@@ -84,18 +71,10 @@ function MapCenter({ coordinates }: { coordinates: Coordinates | null }) {
 }
 
 export function MapView({
-  onConfirm,
   onSelectionChange,
   initialCoordinates = null,
-  isLoading = false,
 }: MapViewProps) {
   const [selection, setSelection] = useState<Coordinates | null>(initialCoordinates);
-  const [latitudeInput, setLatitudeInput] = useState(
-    initialCoordinates ? String(initialCoordinates.latitude) : "",
-  );
-  const [longitudeInput, setLongitudeInput] = useState(
-    initialCoordinates ? String(initialCoordinates.longitude) : "",
-  );
   const [address, setAddress] = useState("");
   const [addressSearchState, setAddressSearchState] =
     useState<AddressSearchState>({ status: "idle" });
@@ -105,8 +84,6 @@ export function MapView({
   const selectCoordinates = useCallback(
     (coordinates: Coordinates) => {
       setSelection(coordinates);
-      setLatitudeInput(coordinates.latitude.toFixed(5));
-      setLongitudeInput(coordinates.longitude.toFixed(5));
       onSelectionChange(coordinates);
     },
     [onSelectionChange],
@@ -173,41 +150,12 @@ export function MapView({
     setAddressSearchState({ status: "idle" });
   };
 
-  const updateCoordinateInputs = (
-    latitudeText: string,
-    longitudeText: string,
-  ) => {
-    setLatitudeInput(latitudeText);
-    setLongitudeInput(longitudeText);
-
-    if (latitudeText.trim() === "" || longitudeText.trim() === "") {
-      setSelection(null);
-      onSelectionChange(null);
-      return;
-    }
-
-    const latitude = Number(latitudeText);
-    const longitude = Number(longitudeText);
-    if (isValidCoordinates(latitude, longitude)) {
-      const coordinates = { latitude, longitude };
-      setSelection(coordinates);
-      onSelectionChange(coordinates);
-    } else {
-      setSelection(null);
-      onSelectionChange(null);
-    }
-  };
-
-  const handleConfirm = () => {
-    if (selection) onConfirm(selection);
-  };
-
   return (
     <section className="map-view" aria-labelledby="map-view-title">
       <div className="map-view__heading">
         <div>
           <h2 id="map-view-title">Elegí una ubicación</h2>
-          <p>Tocá el mapa, arrastrá el punto o ingresá coordenadas.</p>
+          <p>Buscá una dirección, tocá el mapa o arrastrá el punto.</p>
         </div>
         <button
           className="map-view__location-button"
@@ -235,7 +183,7 @@ export function MapView({
             autoComplete="street-address"
             value={address}
             onChange={(event) => handleAddressChange(event.target.value)}
-            placeholder="Ej.: Calle 12, La Plata"
+            placeholder="Ej.: Diagonal 74 2798, La Plata"
             required
           />
           <button
@@ -254,7 +202,7 @@ export function MapView({
       {addressSearchState.status === "empty" && (
         <StatusMessage
           variant="notice"
-          message="No encontramos coincidencias. Probá con una dirección o localidad más específica."
+          message="No encontramos coincidencias. Probá invertir el orden, por ejemplo: “2798, Diagonal 74, La Plata”."
         />
       )}
       {addressSearchState.status === "error" && (
@@ -297,7 +245,7 @@ export function MapView({
         . La dirección ingresada se envía a OpenStreetMap; no incluyas datos confidenciales.
       </p>
 
-      <div className="map-view__canvas" aria-label="Mapa interactivo para elegir coordenadas">
+      <div className="map-view__canvas" aria-label="Mapa interactivo para elegir una ubicación">
         <MapContainer
           center={
             selection
@@ -333,47 +281,6 @@ export function MapView({
         </MapContainer>
       </div>
 
-      <div className="map-view__coordinates">
-        <label>
-          Latitud
-          <input
-            type="number"
-            inputMode="decimal"
-            min="-90"
-            max="90"
-            step="any"
-            value={latitudeInput}
-            onChange={(event) =>
-              updateCoordinateInputs(event.target.value, longitudeInput)
-            }
-            aria-label="Latitud seleccionada"
-          />
-        </label>
-        <label>
-          Longitud
-          <input
-            type="number"
-            inputMode="decimal"
-            min="-180"
-            max="180"
-            step="any"
-            value={longitudeInput}
-            onChange={(event) =>
-              updateCoordinateInputs(latitudeInput, event.target.value)
-            }
-            aria-label="Longitud seleccionada"
-          />
-        </label>
-      </div>
-
-      <button
-        className="map-view__confirm-button"
-        type="button"
-        onClick={handleConfirm}
-        disabled={!selection || isLoading}
-      >
-        {isLoading ? "Consultando clima…" : "Consultar clima"}
-      </button>
     </section>
   );
 }

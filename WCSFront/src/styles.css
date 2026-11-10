@@ -133,6 +133,27 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+.weather-panel__confirm-button {
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #087eaa;
+  border-radius: 0.8rem;
+  color: #fff;
+  background: #087eaa;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.weather-panel__confirm-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.weather-panel__confirm-button:focus-visible {
+  outline: 3px solid #f0b429;
+  outline-offset: 3px;
+}
+
 .weather-panel__note {
   margin: 0;
   color: #607789;

@@ -19,6 +19,7 @@ Definir una interfaz React para consultar las condiciones meteorológicas actual
 - El pronóstico horario, la probabilidad de lluvia y otras capacidades adicionales se desarrollarán en una etapa posterior.
 - El mapa inicial sirve para seleccionar una ubicación; no incluye capas meteorológicas, radar ni visualizaciones de pronóstico.
 - La dirección visual será meteorológica, con jerarquía visual clara para la condición, temperatura y demás datos.
+- No se ofrecen campos editables para ingresar latitud/longitud; la persona usuaria elige una ubicación mediante búsqueda, mapa o geolocalización.
 - El diseño y la implementación seguirán el enfoque **mobile-first**: primero se resolverán los flujos y la presentación en pantallas pequeñas y luego se ampliarán progresivamente para tablet y escritorio.
 
 ## 3. Alcance funcional
@@ -28,6 +29,7 @@ Definir una interfaz React para consultar las condiciones meteorológicas actual
 - Elegir una ubicación haciendo clic en el mapa y mostrando/moviendo un marcador.
 - Buscar una dirección o lugar con Nominatim y centrar el mapa en el resultado. La consulta se envía al presentar el formulario; no se usa autocompletado.
 - Solicitar permiso del navegador para centrar el mapa en la ubicación actual; si no se concede o falla, las demás formas de selección deben seguir disponibles.
+- Confirmar la consulta meteorológica desde la tarjeta lateral “Tu consulta”.
 - Consultar y mostrar las condiciones actuales devueltas por el backend.
 - Mostrar estados de carga, validación, ausencia de resultados y errores de consulta de forma comprensible.
 - Diseño adaptable a pantallas móviles y de escritorio, y controles utilizables con teclado y tecnologías de asistencia.
@@ -76,15 +78,16 @@ La implementación debe configurar la URL base del backend por entorno, no codif
 ### Búsqueda de lugar
 
 1. La persona usuaria busca un nombre de ciudad o lugar.
-2. La interfaz presenta resultados distinguibles cuando haya coincidencias ambiguas.
-3. Al elegir un resultado, centra el mapa y coloca el marcador en sus coordenadas.
-4. La persona usuaria confirma la ubicación y consulta el clima.
+2. Si no hay coincidencias y la consulta parece incluir número de puerta, se prueba una variante con ese número primero, respetando el límite de solicitudes al servicio de geocodificación.
+3. La interfaz presenta resultados distinguibles cuando haya coincidencias ambiguas.
+4. Al elegir un resultado, centra el mapa y coloca el marcador en sus coordenadas.
+5. La persona usuaria confirma la ubicación desde la tarjeta lateral “Tu consulta”.
 
 ### Ubicación del dispositivo
 
 1. La persona usuaria activa explícitamente “Usar mi ubicación”.
 2. El navegador solicita permiso; ante éxito, la interfaz centra el mapa y coloca el marcador.
-3. La consulta se inicia según la interacción final que se acuerde para las selecciones.
+3. La persona usuaria confirma la ubicación desde la tarjeta lateral “Tu consulta”; la geolocalización por sí sola no inicia la consulta.
 4. Si se deniega el permiso o no se obtiene la posición, se informa el motivo de forma clara y se mantienen disponibles el mapa y la búsqueda.
 
 ## 6. Requisitos de experiencia y presentación
@@ -122,6 +125,7 @@ La implementación debe configurar la URL base del backend por entorno, no codif
 - Los estados de carga, falta de resultados, permiso denegado, error de red y error del backend son comprensibles y recuperables.
 - La búsqueda y la ubicación del dispositivo no impiden elegir manualmente un punto en el mapa.
 - La búsqueda de direcciones ofrece resultados seleccionables, limita las consultas a una por segundo y comunica su atribución y uso de datos.
+- Las búsquedas de direcciones en Argentina restringen resultados al país y, ante una búsqueda de domicilio sin coincidencias, reintentan una variante con el número de puerta primero cuando se puede identificar de forma segura.
 - El frontend funciona en móvil y escritorio y no expone secretos de los proveedores.
 - La interfaz se implementa mobile-first y se adapta progresivamente a escritorio sin perder funciones ni legibilidad.
 - El mapa no presenta capas meteorológicas ni pronóstico como si fueran parte de esta entrega.

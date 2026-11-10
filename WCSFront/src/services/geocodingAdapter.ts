@@ -53,6 +53,29 @@ function parseResults(payload: unknown): GeocodingResult[] {
   });
 }
 
+function addressQueryVariants(query: string): string[] {
+  const variants = [query];
+  const explicitNumber = query.match(/\b(?:nro\.?|número|numero|n°)\s*(\d+[a-z]?)\b/i);
+
+  if (explicitNumber) {
+    const street = query
+      .replace(explicitNumber[0], "")
+      .replace(/^[\s,]+|[\s,]+$/g, "")
+      .replace(/\s*,\s*/g, ", ");
+    if (street) variants.push(`${explicitNumber[1]}, ${street}`);
+    return variants;
+  }
+
+  const match = query.match(/^(.+?)\s+(\d+[a-z]?)(\s*,.*)?$/i);
+  if (match) {
+    const street = match[1].trim();
+    const houseNumberFirst = `${match[2]}, ${street}${match[3] ?? ""}`;
+    if (street) variants.push(houseNumberFirst);
+  }
+
+  return [...new Set(variants)];
+}
+
 async function waitForRequestSlot(signal?: AbortSignal): Promise<void> {
   const scheduledAt = Math.max(Date.now(), nextRequestAt);
   nextRequestAt = scheduledAt + MIN_REQUEST_INTERVAL_MS;
@@ -84,50 +107,65 @@ export async function searchAddress(
     return cachedResults;
   }
 
-  await waitForRequestSlot(signal);
-  const url = new URL(NOMINATIM_SEARCH_URL);
-  url.searchParams.set("q", normalizedQuery);
-  url.searchParams.set("format", "jsonv2");
-  url.searchParams.set("limit", "5");
-  url.searchParams.set("accept-language", "es");
+  const results: GeocodingResult[] = [];
+  for (const addressQuery of addressQueryVariants(normalizedQuery)) {
+    await waitForRequestSlot(signal);
+    const url = new URL(NOMINATIM_SEARCH_URL);
+    url.searchParams.set("q", addressQuery);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("limit", "5");
+    url.searchParams.set("accept-language", "es");
+    url.searchParams.set("countrycodes", "ar");
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      signal,
-      headers: { Accept: "application/json" },
-      referrerPolicy: "strict-origin-when-cross-origin",
-    });
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    throw new GeocodingApiError(
-      "No se pudo conectar con el servicio de búsqueda de direcciones. Intentá nuevamente.",
-    );
-  }
-
-  if (!response.ok) {
-    if (response.status === 429) {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        signal,
+        headers: { Accept: "application/json" },
+        referrerPolicy: "strict-origin-when-cross-origin",
+      });
+    } catch (error) {
+      if (signal?.aborted) throw error;
       throw new GeocodingApiError(
-        "El servicio de búsqueda está ocupado. Esperá un momento antes de volver a intentar.",
+        "No se pudo conectar con el servicio de búsqueda de direcciones. Intentá nuevamente.",
       );
     }
-    throw new GeocodingApiError(
-      "No se pudo completar la búsqueda de direcciones. Intentá nuevamente más tarde.",
-    );
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new GeocodingApiError(
+          "El servicio de búsqueda está ocupado. Esperá un momento antes de volver a intentar.",
+        );
+      }
+      throw new GeocodingApiError(
+        "No se pudo completar la búsqueda de direcciones. Intentá nuevamente más tarde.",
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new GeocodingApiError("El servicio de búsqueda devolvió una respuesta ilegible.");
+    }
+
+    const queryResults = parseResults(payload);
+    if (queryResults.length > 0) {
+      results.push(...queryResults);
+      break;
+    }
   }
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new GeocodingApiError("El servicio de búsqueda devolvió una respuesta ilegible.");
-  }
-
-  const results = parseResults(payload);
+  const uniqueResults = [...new Map(
+    results.map((result) => [
+      `${result.coordinates.latitude},${result.coordinates.longitude}`,
+      result,
+    ]),
+  ).values()];
   if (resultCache.size >= MAX_CACHED_QUERIES) {
     const oldestQuery = resultCache.keys().next().value;
     if (oldestQuery !== undefined) resultCache.delete(oldestQuery);
   }
-  resultCache.set(cacheKey, results);
-  return results;
+  resultCache.set(cacheKey, uniqueResults);
+  return uniqueResults;
 }
