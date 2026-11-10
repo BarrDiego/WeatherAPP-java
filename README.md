@@ -10,6 +10,11 @@ en React y una API meteorológica en Java 25 / Spring Boot 3.
   Nominatim al enviar el formulario, sin autocompletado.
 - `WCSApp`: API REST que normaliza condiciones actuales; usa OpenWeather como proveedor
   principal y Open-Meteo como fallback.
+- Roadmap: etapa 3, capa de agentes para mejorar la interacción; etapa 4, RAG y
+  personalización. Los mapas meteorológicos quedan como mejora futura.
+- Resiliencia: Circuit Breaker independiente para cada proveedor. Por defecto, abre
+  al superar el 50 % de fallos recuperables (mínimo 5 llamadas en una ventana de 10),
+  espera 30 segundos y permite 2 llamadas de prueba antes de cerrarse.
 - `spec.md`, `frontend-spec.md` y las constituciones documentan alcance y criterios.
 
 ## Ejecución local
@@ -24,8 +29,9 @@ Requisitos: Java 25 y Node.js LTS con npm.
    ```
 
    El servicio queda disponible en `http://localhost:8080`. La variable de entorno es
-   opcional para arrancar, pero se necesita una clave válida para obtener datos reales
-   de OpenWeather.
+   opcional: sin clave, el backend consulta Open-Meteo; con una clave válida, usa
+   OpenWeather como proveedor principal y recurre a Open-Meteo ante fallos recuperables.
+   Open-Meteo no requiere una clave.
 
 2. Desde otra terminal, iniciar el frontend:
 
@@ -59,10 +65,8 @@ Abrir `http://localhost:4173`; el backend queda disponible en `http://localhost:
 Para una consulta real, crear un archivo `.env` en la raíz con `OPENWEATHER_API_KEY`
 asignada a una clave propia. No guardar ese archivo en Git.
 
-> Nota: actualmente los adapters meteorológicos del backend todavía devuelven datos de
-> ejemplo; el contenedor permite practicar el despliegue local, pero no consultar datos
-> meteorológicos reales. La búsqueda de direcciones usa el servicio público de Nominatim;
-> revisá su política de uso antes de publicar la app.
+La búsqueda de direcciones usa el servicio público de Nominatim; revisá su política de
+uso antes de publicar la app.
 
 ## Despliegue
 

@@ -96,7 +96,7 @@ Sí, porque hay una diferencia real entre “hacer una búsqueda con un proveedo
 
 ## 5. Fallback y resiliencia
 
-La capa de servicio ejecuta la consulta del proveedor principal. Si se detecta un fallo recuperable, intenta con el proveedor secundario.
+La capa de servicio consulta OpenWeather dentro de su Circuit Breaker independiente. Ante un fallo recuperable o si el circuito principal está abierto, consulta Open-Meteo dentro de su propio circuito. Resilience4j abre cada circuito cuando se alcanza un 50 % de fallos en una ventana de 10 llamadas, una vez que haya al menos 5 llamadas; espera 30 segundos y luego permite 2 llamadas de prueba en HALF_OPEN.
 
 ### ¿Por qué fallback?
 
@@ -112,7 +112,7 @@ Si el backend depende de una sola fuente, se vuelve frágil.
 
 ### Resultado
 
-La aplicación puede degradar de forma controlada en vez de romper la experiencia completa cuando una fuente falla.
+La aplicación puede degradar de forma controlada en vez de romper la experiencia completa cuando una fuente falla. Timeout de conexión/lectura: 2 s/5 s. No se reintentan automáticamente las llamadas. Los errores no recuperables, por ejemplo, credenciales rechazadas, no activan fallback ni se cuentan para abrir el circuito. Si Open-Meteo tampoco puede responder, se devuelve HTTP 502 con un mensaje genérico.
 
 ## 6. Validación de entrada y manejo de errores
 
@@ -174,11 +174,12 @@ La etapa 1 quedó bien fundamentada para avanzar.
 
 Las siguientes decisiones naturales son:
 
-- definir pruebas más exhaustivas por proveedor,
-- agregar política más explícita de timeout/reintentos/circuit breaker,
-- validar el fallback con escenarios reales controlados,
+- evaluar si se necesitan reintentos acotados, teniendo en cuenta las cuotas de las API,
+- mantener validaciones de cuota/credenciales en el entorno de ejecución,
 - cerrar el diseño y seleccionar los servicios de mapa y geocodificación del frontend React de la etapa 2 (`frontend-spec.md`),
-- preparar la etapa 3 con mapas meteorológicos
+- preparar la etapa 3 con una capa agéntica de interacción
+- preparar la etapa 4 con RAG, base vectorial y personalización
+- evaluar mapas meteorológicos como mejora futura, según capacidades y condiciones de uso
 
 ## 10. Conclusión
 

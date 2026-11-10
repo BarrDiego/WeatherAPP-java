@@ -1,13 +1,13 @@
 # WeatherApp — resumen de arquitectura y propuesta
 
 **Estado:** propuesta consolidada para la etapa 1  
-**Alcance:** modernización del backend; el frontend se abordará en la etapa 2 y los mapas meteorológicos en la etapa 3.
+**Alcance:** modernización del backend; el frontend corresponde a la etapa 2, la capa agéntica a la etapa 3 y RAG/personalización a la etapa 4. Los mapas meteorológicos quedan como mejora futura.
 
 ## 1. Objetivo
 
 Modernizar el backend de WeatherApp para Java 25 y Spring Boot 3 y ofrecer una API REST que consulte información meteorológica para una ubicación indicada por la persona usuaria. La aplicación debe mantener un contrato propio, aislar las integraciones externas y degradarse de forma controlada cuando los proveedores gratuitos fallen o alcancen sus límites.
 
-Esta propuesta toma como decisiones aprobadas el uso de **Adapter**, **Strategy**, **Circuit Breaker**, OpenWeather como proveedor principal, Open-Meteo como proveedor secundario y reintentos limitados. Las API/productos concretos y algunos detalles funcionales siguen pendientes de verificación y selección.
+Esta propuesta toma como decisiones aprobadas el uso de **Adapter**, **Strategy** y **Circuit Breaker**, OpenWeather como proveedor principal y Open-Meteo como proveedor secundario. Las llamadas reales están implementadas; queda pendiente evaluar reintentos acotados y revisar periódicamente cuotas y condiciones de uso.
 
 ## 2. Arquitectura actual resumida
 
@@ -39,9 +39,9 @@ Strategy tiene un propósito concreto porque el requisito incluye dos proveedore
 
 ### 3.5 Resiliencia por proveedor
 
-Cada integración tendrá timeout y Circuit Breaker independiente. Se permiten reintentos acotados solo para fallos transitorios, respetando cuotas y condiciones de cada proveedor. No se reintentan errores de entrada ni errores de configuración indefinidamente. Si no se obtiene una respuesta válida de ninguno de los dos proveedores, la API devuelve un error controlado, sin fabricar datos ni filtrar detalles sensibles.
+Cada integración tiene timeout y Circuit Breaker independiente, implementado con Resilience4j. Solo los fallos clasificados como recuperables se registran en el circuito: timeout, HTTP 429/5xx, respuesta malformada y circuito abierto. Errores no recuperables, como credenciales rechazadas, no abren el circuito ni activan el fallback. Si OpenWeather falla de forma recuperable o su circuito está abierto, se intenta Open-Meteo; si ese proveedor también falla o su circuito está abierto, la API devuelve un error controlado sin fabricar datos ni filtrar detalles sensibles.
 
-Una dependencia como Resilience4j puede evaluarse para implementar estos mecanismos; la elección queda sujeta a verificar compatibilidad con la versión de Spring Boot seleccionada y a justificar que no resulte innecesaria.
+La configuración actual por proveedor usa ventana deslizante de 10 llamadas, mínimo 5 llamadas antes de evaluar, umbral de fallo del 50 %, espera de 30 segundos en estado OPEN y 2 llamadas permitidas en HALF_OPEN. Los timeouts HTTP son de 2 segundos para conexión y 5 segundos para lectura. No se han implementado reintentos; agregarlos requerirá una política independiente y acotada que respete las cuotas de los proveedores.
 
 ## 4. Componentes propuestos
 
@@ -54,7 +54,7 @@ Una dependencia como Resilience4j puede evaluarse para implementar estos mecanis
 | Interfaz de proveedor | Definir la capacidad de consulta que requiere WeatherApp sin exponer detalles del protocolo. |
 | Adaptador de cada proveedor | Ejecutar solicitudes externas y mapear respuestas y fallos a tipos internos. |
 | Modelos internos/API | Representar ubicación y respuesta de WeatherApp, separados de los DTO crudos externos. |
-| Configuración | Suministrar endpoints, credenciales, timeouts y políticas mediante configuración externa al código. |
+| Configuración | Suministrar endpoints, credenciales, timeouts y umbrales de Circuit Breaker mediante configuración externa al código. |
 
 Organización lógica orientativa:
 
@@ -92,17 +92,15 @@ Un proveedor puede no ofrecer todos los campos; los no disponibles serán opcion
 
 WeatherApp usará español como idioma predeterminado y aceptará un parámetro opcional `lang`. Los adaptadores solicitarán o producirán la descripción en el idioma elegido, sujeto a las capacidades de cada proveedor.
 
-El adapter de OpenWeather mapeará la observación actual de `data` y tomará su descripción de la condición meteorológica principal. Convertirá `dt` a ISO-8601 y, si están presentes, conservará los IDs de `alerts` como referencias internas sin consultar el endpoint de detalle ni incluirlas en el contrato funcional. Si no hay observación actual válida, se tratará como respuesta externa no válida.
-
-El ejemplo de respuesta compartido requiere validación contra una respuesta real controlada: contiene `temp: 286.42` aunque la solicitud indica `units=metric`, y le falta una coma antes de `alerts`. La implementación debe confirmar la unidad efectiva del endpoint antes de convertir temperaturas, no inferirla de ese ejemplo.
+El adapter de OpenWeather consulta Current Weather (`/data/2.5/weather`) con `units=metric` y mapea `main`, `weather[0]`, `wind`, `clouds`, `visibility`, `dt`, `coord` y el offset `timezone` al contrato propio. La hora se convierte desde Unix a ISO-8601 usando el offset devuelto. Este endpoint no entrega alertas; alertas y pronósticos no forman parte del contrato actual.
 
 La probabilidad de precipitación no pertenece a este modelo de condiciones actuales; se evaluará junto con un modelo de pronóstico en una etapa futura.
 
 ### 4.2 Integración Open-Meteo y SDK Java
 
-Open-Meteo será la estrategia secundaria para condiciones actuales. Su adapter consultará el endpoint de Weather Forecast API con coordenadas, zona horaria/variables acordadas y `format=flatbuffers`, y usará el SDK Java oficial `com.open-meteo:sdk` para decodificar la respuesta. La documentación del SDK consultada muestra `1.4.0`; al implementar se debe confirmar la versión vigente en Maven Central y fijarla explícitamente en Maven.
+Open-Meteo será la estrategia secundaria para condiciones actuales. Su adapter consulta el endpoint de Weather Forecast API con coordenadas, zona horaria/variables acordadas y `format=flatbuffers`, y usa el SDK Java oficial `com.open-meteo:sdk:1.4.0` para decodificar la respuesta.
 
-Dependencia Maven (confirmar la versión publicada al comenzar la implementación):
+Dependencia Maven:
 
 ```xml
 <dependency>
@@ -135,8 +133,8 @@ Referencias consultadas: [README general del SDK](https://github.com/open-meteo/
 1. El frontend envía latitud y longitud; la obtención/selección de esas coordenadas queda a cargo del frontend. La solicitud puede incluir un idioma opcional; el idioma predeterminado es español.
 2. La API valida que latitud y longitud estén presentes, sean numéricas y estén dentro de sus rangos válidos. Una entrada inválida se rechaza antes de consumir cuota del proveedor.
 3. El caso de uso solicita información al coordinador.
-4. El coordinador invoca OpenWeather a través de su estrategia. El adaptador aplica timeout y Circuit Breaker, efectúa la llamada y transforma la respuesta externa.
-5. Si ocurre un fallo clasificado como recuperable por la política acordada, el coordinador intenta Open-Meteo bajo sus propios límites de resiliencia.
+4. El coordinador invoca OpenWeather a través de su estrategia, dentro de su Circuit Breaker. El adaptador aplica timeout, efectúa la llamada y transforma la respuesta externa.
+5. Si ocurre un fallo recuperable o el Circuit Breaker de OpenWeather está OPEN, el coordinador intenta Open-Meteo bajo sus propios límites de timeout y Circuit Breaker. En HALF_OPEN, las llamadas de prueba permiten cerrar o volver a abrir el circuito.
 6. El caso de uso devuelve el modelo interno y la API lo convierte al contrato público de WeatherApp.
 7. Si la consulta no puede completarse, el manejo de errores devuelve un error estable y comprensible, sin credenciales, JSON externo ni detalles internos sensibles.
 
@@ -144,15 +142,15 @@ Referencias consultadas: [README general del SDK](https://github.com/open-meteo/
 
 La aplicación debe distinguir al menos entre coordenadas inválidas, proveedor sin datos para las coordenadas, fallo transitorio del proveedor, límite de uso, timeout, respuesta externa no válida y configuración ausente o incorrecta.
 
-Se acuerda usar Open-Meteo como proveedor secundario de OpenWeather y reintentos limitados, pero falta definir exactamente qué fallos habilitan el cambio de proveedor. Como criterio inicial, conviene restringirlo a fallos transitorios (por ejemplo, timeout o indisponibilidad) y revisar por separado límites de uso, errores de autenticación, respuesta inválida y ubicación no encontrada. Un fallo de configuración no debería quedar oculto por un fallback silencioso. Si ambos proveedores fallan, se responde con un error controlado.
+Se implementó fallback a Open-Meteo ante fallos recuperables de OpenWeather (timeout/conectividad, HTTP 429/5xx, respuesta inválida) y cuando su circuito está OPEN. Errores no recuperables, incluidos otros errores HTTP como credenciales inválidas, se devuelven como error controlado sin fallback y no cuentan como fallos del Circuit Breaker. Si ambos proveedores fallan o sus circuitos están abiertos, la API responde HTTP 502 con un mensaje público genérico.
 
-El número de reintentos, sus intervalos y los umbrales de Circuit Breaker se definirán después de elegir los proveedores y revisar sus cuotas. Se evitarán reintentos agresivos que multipliquen solicitudes en planes gratuitos.
+Resilience4j usa actualmente los valores descritos en la sección 3.5. No existe aún retry automático; timeout, circuit breaker y fallback son mecanismos distintos y no deben confundirse.
 
 ## 7. Pruebas y validación
 
 - **Unitarias:** JUnit y Mockito para la lógica de aplicación, validación, selección/fallback y mapeos relevantes. Se usan dobles de prueba; no se llama a servicios reales.
 - **Integración de adaptadores:** respuestas HTTP controladas para comprobar solicitudes, mapeo, errores y timeout sin credenciales reales.
-- **Resiliencia:** pruebas de apertura/recuperación de cada Circuit Breaker, reintentos acotados, fallback al secundario y error final si ambos proveedores fallan.
+- **Resiliencia:** pruebas de apertura del Circuit Breaker, fallback cuando el principal está OPEN, rechazo de errores no recuperables y cierre tras una llamada exitosa en HALF_OPEN. No hay reintentos automáticos implementados.
 - **Plataforma:** compilar y ejecutar con Java 25 y la versión de Spring Boot 3 elegida; validar la configuración limpia de MVC y el stack Jakarta.
 - **Code review:** revisar los cambios con `/r`, resolver los hallazgos acordados y registrar decisiones relevantes.
 
@@ -160,23 +158,26 @@ Las pruebas necesarias se escribirán durante el desarrollo; la fase final de pr
 
 ## 8. Fases de trabajo
 
-1. **Etapa 1 — backend:** migrar a Java 25 y Spring Boot 3; retirar o adaptar JSP y configuración heredada que no corresponda a REST; implementar la API y el flujo de consulta con OpenWeather principal y Open-Meteo secundario, usando Adapter, Strategy, Circuit Breaker y reintentos limitados. Documentar decisiones y validar con pruebas.
+1. **Etapa 1 — backend:** migrar a Java 25 y Spring Boot 3; retirar o adaptar JSP y configuración heredada que no corresponda a REST; implementar la API y el flujo de consulta con OpenWeather principal y Open-Meteo secundario, usando Adapter, Strategy, timeouts y Circuit Breaker. Los reintentos automáticos quedan pendientes de decisión e implementación.
 2. **Etapa 2 — frontend:** implementar la interfaz React definida en `frontend-spec.md`. React-Leaflet y OpenStreetMap (OSM) son candidatos para el mapa base, sujetos a verificar sus requisitos de uso y atribución. El mapa permite seleccionar ubicaciones y no incorpora capas meteorológicas en esta etapa.
-3. **Etapa 3 — mapas meteorológicos:** agregar mapas de radar de precipitaciones u otras capas meteorológicas que estén disponibles en los planes gratuitos de las API seleccionadas, después de comprobar cobertura, actualización y condiciones de uso.
-4. **Despliegue:** desplegar los componentes en un servicio online gratuito por seleccionar, sujeto a validar límites, compatibilidad y condiciones de operación.
-5. **Code review y pruebas:** revisar los cambios con `/r`; completar JUnit/Mockito para comportamiento principal, validación, errores y resiliencia, además de pruebas de integración HTTP controlada de los adaptadores.
+3. **Etapa 3 — capa agéntica:** incorporar una capa de agentes que interprete la intención y coordine herramientas meteorológicas mediante el backend. Evaluar LangChain4j/tool calling, límites de operación, manejo de errores y protección de datos.
+4. **Etapa 4 — RAG y personalización:** incorporar recuperación aumentada por generación, una base vectorial y contexto/preferencias de usuario, luego de definir consentimiento, privacidad, seguridad y ciclo de vida de los datos.
+5. **Mejoras futuras:** evaluar mapas meteorológicos y otras capas según las capacidades reales de los proveedores y sus condiciones de uso.
+6. **Despliegue:** desplegar los componentes en un servicio online gratuito por seleccionar, sujeto a validar límites, compatibilidad y condiciones de operación.
+7. **Code review y pruebas:** revisar los cambios con `/r`; ejecutar JUnit/Mockito para comportamiento principal, validación, errores y resiliencia, además de pruebas de integración HTTP controlada de los adaptadores.
 
 El orden define las entregas de trabajo, pero no obliga a posponer pruebas hasta la cuarta fase.
 
 ## 9. Decisiones pendientes
 
-1. Verificar las API/productos concretos de OpenWeather y Open-Meteo, su compatibilidad con los campos normalizados, cobertura argentina, cuotas, coste y condiciones de uso; confirmar la versión publicada del SDK Java Open-Meteo.
-2. Definir los fallos que habilitan el fallback, los reintentos máximos, sus intervalos y umbrales del Circuit Breaker, a partir de las políticas reales de ambos proveedores.
-3. Elegir versiones concretas de Java/Spring Boot 3 y dependencias tras verificar compatibilidad con Java 25.
+1. Revisar periódicamente las API/productos de OpenWeather y Open-Meteo, cobertura argentina, cuotas, coste y condiciones de uso.
+2. Si se agregan reintentos, definir máximo, intervalos y fallos elegibles a partir de las políticas vigentes de los proveedores.
+3. Revisar versiones de Java, Spring Boot y dependencias antes de actualizaciones importantes.
 4. En una etapa futura, definir el modelo de pronóstico y el horizonte de la probabilidad de precipitación.
 5. En etapa 2, cerrar el diseño visual, seleccionar biblioteca/proveedor de mapa y geocodificador, definir el centro inicial y la interacción de consulta; verificar cobertura, cuotas, atribución y condiciones de uso.
-6. En etapa 3, seleccionar las capas meteorológicas de radar de precipitaciones u otras que permitan los planes gratuitos de las API elegidas.
-7. Seleccionar el servicio de hosting gratuito y verificar sus límites y requisitos de despliegue.
+6. Para la etapa 3, definir herramientas, límites, modelo de lenguaje, contrato de interacción y estrategia de resiliencia de la capa agéntica.
+7. Para la etapa 4, definir las fuentes de conocimiento, vector store, embeddings y controles de privacidad/consentimiento para la personalización.
+8. Seleccionar el servicio de hosting gratuito y verificar sus límites y requisitos de despliegue.
 
 Estas decisiones no cambian la arquitectura general propuesta, pero sí condicionan el contrato final, la configuración y los parámetros operativos.
 

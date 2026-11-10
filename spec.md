@@ -48,7 +48,9 @@ La solución debe incluir pruebas unitarias y documentación breve de las altern
 - Aplicar principios SOLID y patrones de diseño cuando resuelvan necesidades identificadas. Evaluar, como ejercicio explícito, una solución con condicionales frente a Strategy para un comportamiento con alternativas intercambiables.
 - Incorporar pruebas unitarias y documentar brevemente el problema de diseño, alternativas, decisión, justificación y validación.
 - **Etapa 2 — frontend:** implementar la interfaz React especificada en `frontend-spec.md`, con un mapa interactivo para seleccionar ubicación, búsqueda de lugares y opción de ubicación del dispositivo.
-- **Etapa 3 — mapas meteorológicos:** agregar mapas de radar de precipitaciones u otras capas que estén disponibles bajo los planes gratuitos de las API seleccionadas.
+- **Etapa 3 — capa agéntica:** incorporar agentes que interpreten la intención de la persona usuaria y mejoren la experiencia desde el frontend, interactuando con el backend mediante una capa de orquestación con LangChain4j u otra abstracción de tool calling compatible.
+- **Etapa 4 — RAG y personalización:** incorporar recuperación aumentada por generación, una base vectorial y capacidades para conocer preferencias/contexto de la persona usuaria y ofrecer orientación más pertinente, con decisiones explícitas de privacidad y consentimiento.
+- **Mejoras futuras:** evaluar mapas meteorológicos, radar u otras capas según disponibilidad, cobertura y condiciones de uso; no forman parte de la etapa 3.
 - Mantener la persistencia fuera del alcance inicial, salvo que una necesidad funcional futura la justifique.
 
 ### Excluye
@@ -69,7 +71,7 @@ La solución debe incluir pruebas unitarias y documentación breve de las altern
 - **RF6:** La etapa 2 implementará un frontend React con mapa interactivo para seleccionar ubicaciones y consultar las condiciones actuales. El mapa base y la búsqueda de lugares requieren seleccionar servicios y verificar sus condiciones. Las capas meteorológicas y el pronóstico quedan para etapas posteriores.
 - **RF7:** Ante fallos recuperables del proveedor principal OpenWeather, el backend debe intentar la consulta con Open-Meteo como proveedor secundario configurado. Si ambos proveedores no permiten completar la consulta, debe responder con un error comprensible y consistente, sin exponer detalles internos ni inventar información meteorológica.
 - **RF8:** La API debe devolver descripciones meteorológicas en español por defecto y permitir solicitar otro idioma mediante un parámetro opcional cuando sea compatible. Cada adaptador debe producir descripciones equivalentes en el idioma solicitado.
-- **RF9:** El adaptador de OpenWeather debe mapear los identificadores de alertas presentes en la respuesta a una representación interna. En esta etapa no debe consultar el endpoint de detalle de alertas ni exponerlas como funcionalidad de la API.
+- **RF9:** Alertas y pronósticos no forman parte del contrato actual de condiciones meteorológicas. El endpoint OpenWeather Current Weather usado por esta etapa no proporciona alertas.
 - **RF10:** El adaptador de Open-Meteo debe usar el SDK Java oficial para decodificar respuestas meteorológicas FlatBuffers. Las llamadas HTTP y la política de resiliencia permanecen bajo control de la aplicación.
 
 ## 8. Requerimientos no funcionales
@@ -105,7 +107,8 @@ La solución debe incluir pruebas unitarias y documentación breve de las altern
 - [ ] La integración puede probarse mediante respuestas controladas del proveedor y contempla al menos un caso exitoso y fallos representativos.
 - [ ] Si falla el proveedor principal, el backend puede usar el secundario configurado; si ambos fallan, devuelve un error controlado. Las pruebas no dependen de servicios ni credenciales reales.
 - [ ] La respuesta pública de condiciones actuales usa unidades normalizadas y descripciones en español por defecto, con idioma opcional.
-- [ ] Los reintentos son limitados y solo aplican a fallos transitorios; Circuit Breaker y reintentos se prueban por proveedor.
+- [x] Hay Circuit Breaker independiente por proveedor, con fallos recuperables como únicos fallos contabilizados y pruebas de apertura, fallback y recuperación HALF_OPEN.
+- [ ] Implementar reintentos acotados para fallos transitorios, si se justifican por cuotas y comportamiento de las API.
 - [ ] Existe una explicación breve que compare condicionales y Strategy en un caso pertinente, describa las alternativas y sus trade-offs, justifique la decisión y explique cómo se valida.
 - [ ] La selección del proveedor y los datos meteorológicos que forman la respuesta quedan documentados antes de dar por terminada la primera etapa.
 - [x] Se acordó el alcance funcional inicial de la etapa 2 (React, mapa interactivo para elegir ubicación, búsqueda de lugares y opción de geolocalización); el diseño visual y la selección de servicios externos se detallan en `frontend-spec.md` antes de implementar.
@@ -128,22 +131,28 @@ La solución debe incluir pruebas unitarias y documentación breve de las altern
 - **Supuesto:** No se requiere base de datos para la primera entrega, ya que no se indicó persistencia de usuarios, búsquedas u otra información.
 - **Decisión:** OpenWeather será el proveedor meteorológico principal y Open-Meteo el proveedor secundario para resiliencia/fallback. Antes de implementar, se verificarán las API concretas, cobertura, límites y condiciones de uso vigentes.
 - **Decisión:** React es el framework acordado para la etapa 2. El frontend vivirá en `WCSFront` y ofrecerá un mapa interactivo, búsqueda de lugares y uso opcional de la ubicación del dispositivo. React-Leaflet y OpenStreetMap (OSM) siguen siendo candidatos sujetos a verificar condiciones de uso y atribución. El mapa de esta etapa selecciona ubicaciones; no es un mapa meteorológico.
-- **Decisión:** La etapa 3 incorporará mapas de radar de precipitaciones o las capas meteorológicas que estén disponibles dentro de los planes gratuitos de las API seleccionadas.
+- **Decisión:** La etapa 3 se centrará en una capa agéntica que mejore la experiencia desde el frontend y orqueste consultas meteorológicas a través del backend. La selección de herramientas debe respetar las capacidades reales de las integraciones existentes.
+- **Decisión:** La etapa 4 evaluará RAG, una base vectorial y personalización basada en el contexto/preferencias de la persona usuaria, con alcance de datos, privacidad y consentimiento definidos antes de implementar.
+- **Decisión:** Los mapas meteorológicos son una posible mejora futura y no el foco de la etapa 3.
 - **Objetivo de despliegue:** desplegar la aplicación en un servicio online gratuito, sujeto a verificar disponibilidad y límites adecuados. El proveedor de hosting está pendiente de selección.
 - **Decisión:** La consulta inicial corresponde a condiciones meteorológicas actuales. La probabilidad de precipitación queda fuera de este modelo porque requiere datos de pronóstico.
 - **Decisión:** El modelo público incluirá ubicación (latitud, longitud y zona horaria), hora de observación, temperatura y sensación térmica en °C, descripción de condiciones, presión en hPa, humedad en porcentaje, velocidad del viento en m/s, dirección del viento en grados, nubosidad en porcentaje y visibilidad en metros. Los campos que un proveedor no ofrezca podrán ser opcionales.
 - **Decisión:** Las descripciones se solicitan en español por defecto; se permitirá un parámetro opcional de idioma por consulta y cada adaptador normalizará/localizará la descripción según sus capacidades.
-- **Decisión:** Los IDs de alertas de OpenWeather se mapearán internamente, pero no se consultará el endpoint de detalle ni se usarán funcionalmente en esta etapa.
+- **Decisión:** Alertas y pronósticos quedan fuera del contrato actual; no se consulta un endpoint de detalle de alertas.
 - **Decisión:** El adapter Open-Meteo usará el SDK Java oficial `com.open-meteo:sdk` para decodificar respuestas de Weather Forecast API solicitadas en formato FlatBuffers. El SDK no reemplaza al cliente HTTP de la aplicación.
 - **Decisión:** El backend recibe latitud y longitud; la selección/obtención de coordenadas y la resolución de nombres de lugares son responsabilidad del frontend.
-- **Pendiente:** Seleccionar las API/productos concretos de OpenWeather y Open-Meteo para la consulta inicial y verificar compatibilidad de datos, cobertura, cuotas y condiciones de uso.
-- **Pendiente:** Confirmar y fijar la versión vigente del SDK Java `com.open-meteo:sdk` al implementar.
-- **Pendiente:** Definir el orden de fallback y los errores que activan el cambio entre OpenWeather y Open-Meteo.
-- **Pendiente:** Precisar el comportamiento observable esperado ante errores del proveedor y solicitudes repetidas.
+- **Decisión:** El backend usa OpenWeather Current Weather (`/data/2.5/weather`) como proveedor principal y Open-Meteo Forecast API (`/v1/forecast`) como fallback de condiciones actuales. Revisar periódicamente cobertura, cuotas y condiciones de uso.
+- **Decisión:** La versión del SDK Java fijada para Open-Meteo es `com.open-meteo:sdk:1.4.0`.
+- **Decisión:** El fallback de OpenWeather a Open-Meteo se activa ante timeout/conectividad, HTTP 429/5xx, respuesta externa inválida o circuito OpenWeather OPEN. Errores no recuperables, como credenciales rechazadas, no activan fallback ni cuentan como fallo del Circuit Breaker.
+- **Decisión:** Resilience4j usa ventana deslizante 10, mínimo 5 llamadas, umbral 50 %, espera OPEN de 30 segundos y 2 llamadas HALF_OPEN. Los HTTP timeouts son 2 segundos para conexión y 5 segundos para lectura.
+- **Pendiente:** Evaluar e implementar reintentos acotados, solo si las cuotas/condiciones de los proveedores los justifican; actualmente no hay reintentos automáticos.
+- **Decisión:** Si ambos proveedores fallan o no admiten llamadas por sus Circuit Breakers, el backend devuelve HTTP 502 con un mensaje público genérico.
 - **Pendiente:** En una etapa futura, definir si se incorporará pronóstico con probabilidad de precipitación y qué horizonte temporal se expondrá.
 - **Pendiente:** En la etapa 2, cerrar el diseño visual, elegir el proveedor de mapa y el servicio de geocodificación, definir el centro inicial y acordar cuándo se dispara la consulta meteorológica. Verificar condiciones de uso, cobertura y atribución.
 - **Pendiente:** Acordar cómo se atribuye la fuente meteorológica cuando el backend completa una consulta mediante Open-Meteo como fallback.
-- **Pendiente:** En la etapa 3, precisar las capas meteorológicas de radar de precipitaciones u otras disponibles en los planes gratuitos de las API elegidas, además de su cobertura, actualización y condiciones de uso.
+- **Pendiente:** Para la etapa 3, definir el alcance del agente, sus herramientas, el contrato de interacción frontend/backend, el proveedor/modelo de lenguaje, límites de coste y latencia, y el comportamiento ante errores.
+- **Pendiente:** Para la etapa 4, definir fuentes de conocimiento, estrategia de embeddings/vector store, ciclo de vida de datos del usuario, consentimiento, privacidad, seguridad y eliminación de datos.
+- **Pendiente:** Si se priorizan mapas meteorológicos en una mejora futura, verificar disponibilidad, cobertura, actualización y condiciones de uso de las capas elegidas.
 - **Pendiente:** Seleccionar el servicio de hosting gratuito y verificar sus límites, soporte de Java 25 y requisitos de despliegue.
 - **Mejora sugerida:** Mantener una nota de decisiones técnicas con el problema, alternativas, trade-offs, decisión y validación de cada decisión importante, para que el proyecto sirva como material concreto de explicación técnica.
 
@@ -152,7 +161,7 @@ La solución debe incluir pruebas unitarias y documentación breve de las altern
 La implementación de la primera etapa del backend se organizará en las siguientes fases:
 
 1. **Refactorización y documentación:** migrar el backend a Java 25 y Spring Boot 3, ordenar la estructura y retirar o adaptar los componentes heredados que no correspondan al backend REST. Documentar el estado inicial, el alcance de la refactorización, las decisiones tomadas y cómo se valida la migración.
-2. **Patrones y desarrollo:** implementar la consulta meteorológica REST usando Adapter para aislar cada integración externa, Strategy para intercambiar entre proveedor principal y secundario, y Circuit Breaker independiente por proveedor para limitar llamadas durante fallos persistentes. Incorporar reintentos acotados para fallos transitorios y un fallback al secundario según una política definida. Documentar las alternativas y los motivos de aplicar estos patrones.
+2. **Patrones y desarrollo:** implementar consulta REST con Adapter, Strategy, timeout, Circuit Breaker independiente por proveedor y fallback definido. Evaluar reintentos acotados en función de las cuotas y condiciones de las APIs; actualmente no están implementados. Documentar las alternativas y los motivos de aplicar estos patrones.
 3. **Code review:** revisar los cambios de las fases anteriores mediante `/r`, registrar hallazgos relevantes y resolver los problemas acordados antes de dar la implementación por lista para validación.
 4. **Pruebas unitarias:** completar y ejecutar las pruebas unitarias con JUnit y Mockito, sin llamadas reales al proveedor ni credenciales reales. Cubrir el comportamiento principal, la validación y los escenarios representativos de error. Los tests necesarios para desarrollar y revisar cada cambio se pueden escribir antes; esta fase es la validación final de la cobertura unitaria acordada.
 
